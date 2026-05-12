@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Chess Move Tracker</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #fafafa;
+      margin: 20px;
+    }
+    h1 {
+      color: #2c3e50;
+      margin-bottom: 10px;
+    }
+    #board {
+      display: grid;
+      grid-template-columns: repeat(8, 80px);
+      grid-template-rows: repeat(8, 80px);
+      border: 3px solid #333;
+      margin-bottom: 10px;
+      max-width: 640px;
+    }
+    .square {
+      width: 80px;
+      height: 80px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+      box-sizing: border-box;
+    }
+    .light { background: #f0d9b5; }
+    .dark  { background: #b58863; }
+
+    .piece-img {
+      width: 72px;
+      height: 72px;
+      pointer-events: none;
+    }
+
+    .coord {
+      position: absolute;
+      bottom: 2px;
+      left: 4px;
+      font-size: 11px;
+      color: rgba(0,0,0,0.7);
+      text-shadow: 0 0 2px rgba(255,255,255,0.8);
+      pointer-events: none;
+    }
+
+    /* Lichess-style highlights */
+    .source-selected {
+      box-shadow: inset 0 0 0 4px #f7ec5d;
+    }
+    .dest-selected {
+      box-shadow: inset 0 0 0 4px #f2b233;
+    }
+
+    #controls {
+      margin-bottom: 10px;
+      max-width: 640px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+    }
+
+    button {
+      padding: 6px 10px;
+      background: #2c3e50;
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+      border-radius: 3px;
+    }
+    button:hover {
+      background: #1b2836;
+    }
+
+    #emailInput {
+      flex: 1 1 160px;
+      min-width: 140px;
+      padding: 5px;
+      font-size: 14px;
+    }
+
+    #moves {
+      width: 100%;
+      max-width: 640px;
+      height: 200px;
+      box-sizing: border-box;
+    }
+
+    @media (max-width: 700px) {
+      #board {
+        width: 100%;
+        max-width: 100%;
+      }
+      .square {
+        width: 12.5vw;
+        height: 12.5vw;
+      }
+      .piece-img {
+        width: 11vw;
+        height: 11vw;
+      }
+    }
+  </style>
+
+  <script>
+    const PIECES = {
+      'r':'bR','n':'bN','b':'bB','q':'bQ','k':'bK','p':'bP',
+      'R':'wR','N':'wN','B':'wB','Q':'wQ','K':'wK','P':'wP'
+    };
+
+    let board = [
+      "rnbqkbnr",
+      "pppppppp",
+      "........",
+      "........",
+      "........",
+      "........",
+      "PPPPPPPP",
+      "RNBQKBNR"
+    ];
+
+    let turn = "white";
+    let moveList = [];
+    let moveNumber = 1;
+    let flipped = false;
+
+    let selectedSource = null;       // { r, c, piece }
+    let selectedDestination = null;  // { r, c }
+    let lastPreview = null;          // { board, moveList, moveNumber, turn, source }
+
+    let games = [];                  // array of completed game PGNs
+
+    function pieceToSrc(ch) {
+      const key = PIECES[ch];
+      if (!key) return null;
+      return "pieces/" + key + ".svg";
+    }
+
+    function cloneBoard(b) {
+      return b.slice(); // array of strings
+    }
+
+    function drawBoard() {
+      const boardDiv = document.getElementById("board");
+      boardDiv.innerHTML = "";
+
+      const files = "abcdefgh";
+      const ranks = "12345678";
+
+      for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+          const sq = document.createElement("div");
+          sq.className = "square " + ((r + c) % 2 === 0 ? "light" : "dark");
+
+          // Map display coords to board coords
+          let br, bc;
+          if (!flipped) {
+            br = r;
+            bc = c;
+          } else {
+            br = 7 - r;
+            bc = 7 - c;
+          }
+
+          const piece = board[br][bc];
+          if (piece !== ".") {
+            const img = document.createElement("img");
+            img.className = "piece-img";
+            img.src = pieceToSrc(piece);
+            sq.appendChild(img);
+          }
+
+          // Coordinates tied to board square (not to flip)
+          const fileChar = files[bc];        // a–h
+          const rankChar = ranks[7 - br];    // 1–8 (a1 is br=7,bc=0)
+          const coordText = fileChar + rankChar;
+
+          const coordSpan = document.createElement("div");
+          coordSpan.className = "coord";
+          coordSpan.textContent = coordText;
+          sq.appendChild(coordSpan);
+
+          // Highlights
+          if (selectedSource &&
+              br === selectedSource.r &&
+              bc === selectedSource.c) {
+            sq.classList.add("source-selected");
+          }
+          if (selectedDestination &&
+              br === selectedDestination.r &&
+              bc === selectedDestination.c) {
+            sq.classList.add("dest-selected");
+          }
+
+          sq.onclick = () => handleClick(br, bc);
+          boardDiv.appendChild(sq);
+        }
+      }
+    }
+
+/* END OF CHUNK 1 */
+    
+
+    function handleClick(r, c) {
+      const piece = board[r][c];
+
+      // CASE 1: No source selected yet
+      if (!selectedSource) {
+        if (piece === ".") return;
+        if (turn === "white" && piece !== piece.toUpperCase()) return;
+        if (turn === "black" && piece !== piece.toLowerCase()) return;
+
+        selectedSource = { r, c, piece };
+        selectedDestination = null;
+        lastPreview = null;
+        drawBoard();
+        return;
+      }
+
+      // CASE 2: Source selected, no destination yet
+      if (selectedSource && !selectedDestination) {
+        // Clicked same source square -> unselect
+        if (r === selectedSource.r && c === selectedSource.c) {
+          selectedSource = null;
+          selectedDestination = null;
+          lastPreview = null;
+          drawBoard();
+          return;
+        }
+
+        // Otherwise, treat as destination (preview move)
+        previewMove(selectedSource, { r, c });
+        return;
+      }
+
+      /***********************
+
+      // CASE 3: Source and destination selected (preview active)
+      if (selectedSource && selectedDestination) {
+        // Clicked destination again -> undo preview
+        if (r === selectedDestination.r && c === selectedDestination.c) {
+          undoPreview();
+          return;
+        }
+
+        // Illegal same-side click after preview: ignore completely
+        if (piece !== "." &&
+            ((turn === "white" && piece === piece.toUpperCase()) ||
+             (turn === "black" && piece === piece.toLowerCase()))) {
+          drawBoard();
+          return;
+        }
+
+        // Otherwise: commit previous move and start new selection
+        selectedSource = null;
+        selectedDestination = null;
+        lastPreview = null;
+        drawBoard();
+        handleClick(r, c);
+        return;
+      }
+        ****************************/
+             // CASE 3: Source and destination selected (preview active)
+        if (selectedSource && selectedDestination) {
+            // Clicked destination again -> undo preview
+            if (r === selectedDestination.r && c === selectedDestination.c) {
+            undoPreview();
+            return;
+            }
+
+            const piece = board[r][c];
+
+            // If clicked a piece of the SAME side as the original source,
+            // treat as illegal "same-side moves twice" and ignore completely.
+            if (piece !== ".") {
+            const clickedIsWhite =
+                (piece === piece.toUpperCase());
+            const sourceIsWhite =
+                (selectedSource.piece === selectedSource.piece.toUpperCase());
+
+            if (clickedIsWhite === sourceIsWhite) {
+                // Illegal same-side click: keep preview and selection
+                drawBoard();
+                return;
+            }
+        }
+
+        // Otherwise: commit previous move and start new selection
+        selectedSource = null;
+        selectedDestination = null;
+        lastPreview = null;
+        drawBoard();
+        handleClick(r, c);
+        return;
+      }
+
+    }
+
+    function previewMove(from, to) {
+      // Save state before preview
+      lastPreview = {
+        board: cloneBoard(board),
+        moveList: moveList.slice(),
+        moveNumber: moveNumber,
+        turn: turn,
+        source: { ...from }
+      };
+
+      // Apply move
+      board[to.r] = replaceChar(board[to.r], to.c, from.piece);
+      board[from.r] = replaceChar(board[from.r], from.c, ".");
+
+      recordMove(from, to); // this also flips turn / increments moveNumber
+
+      selectedDestination = { r: to.r, c: to.c };
+      drawBoard();
+    }
+
+    function undoPreview() {
+      if (!lastPreview) return;
+
+      board = cloneBoard(lastPreview.board);
+      moveList = lastPreview.moveList.slice();
+      moveNumber = lastPreview.moveNumber;
+      turn = lastPreview.turn;
+
+      selectedSource = { ...lastPreview.source };
+      selectedDestination = null;
+      lastPreview = null;
+
+      updatePGN();
+      drawBoard();
+    }
+
+    function replaceChar(str, idx, chr) {
+      return str.substring(0, idx) + chr + str.substring(idx + 1);
+    }
+
+    function recordMove(from, to) {
+      const files = "abcdefgh";
+      const ranks = "87654321";
+
+      const moveText = files[from.c] + ranks[from.r] + "-" +
+                       files[to.c] + ranks[to.r];
+
+      if (turn === "white") {
+        moveList.push(moveNumber + ". " + moveText);
+      } else {
+        moveList[moveList.length - 1] += " " + moveText;
+        moveNumber++;
+      }
+
+      // Switch turn after recording
+      turn = (turn === "white" ? "black" : "white");
+
+      updatePGN();
+    }
+
+    function updatePGN() {
+      const pgnBox = document.getElementById("moves");
+
+      const today = new Date();
+      const yyyy = today.getFullYear();
+      const mm = String(today.getMonth() + 1).padStart(2, "0");
+      const dd = String(today.getDate()).padStart(2, "0");
+
+      const dateTag = `[Date "${yyyy}.${mm}.${dd}"]`;
+      const whiteTag = `[White " "]`;
+      const blackTag = `[Black " "]`;
+      const resultTag = `[Result "1/2-1/2"]`;
+
+      const header = [dateTag, whiteTag, blackTag, resultTag].join("\r\n");
+      const movesText = moveList.join("\r\n");
+
+      pgnBox.value = header + "\r\n\r\n" + movesText;
+    }
+
+    function newGame() {
+      // Save current game if it has moves
+      const currentPGN = document.getElementById("moves").value.trim();
+      if (moveList.length > 0 && currentPGN.length > 0) {
+        games.push(currentPGN);
+      }
+
+      // Reset board
+      board = [
+        "rnbqkbnr",
+        "pppppppp",
+        "........",
+        "........",
+        "........",
+        "........",
+        "PPPPPPPP",
+        "RNBQKBNR"
+      ];
+
+      turn = "white";
+      moveList = [];
+      moveNumber = 1;
+      selectedSource = null;
+      selectedDestination = null;
+      lastPreview = null;
+
+      updatePGN();
+      drawBoard();
+    }
+
+    function buildAllPGN() {
+      // Ensure current PGN is up to date
+      updatePGN();
+      const currentPGN = document.getElementById("moves").value.trim();
+
+      const allArray = currentPGN.length > 0
+        ? [...games, currentPGN]
+        : [...games];
+
+      if (allArray.length === 0) return "";
+
+      return allArray.join(
+        "\r\n\r\n----------------------------------------\r\n\r\n"
+      );
+    }
+
+/* END OF CHUNK 2 */
+    function copyPGN() {
+      const allPGN = buildAllPGN();
+      if (!allPGN) return;
+
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(allPGN);
+      } else {
+        const textarea = document.createElement("textarea");
+        textarea.value = allPGN;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+      }
+    }
+/************************
+    function sendEmail() {
+      const emailInput = document.getElementById("emailInput").value.trim();
+      if (!emailInput) return;
+
+      const addresses = emailInput
+        .split(",")
+        .map(a => a.trim())
+        .filter(a => a.length > 0)
+        .join(",");
+
+      if (!addresses) return;
+    
+      const allPGN = buildAllPGN();
+      if (!allPGN) return;
+
+      const subject = encodeURIComponent("Chess Game PGN");
+      const body = encodeURIComponent(allPGN);
+
+      const mailtoLink = `mailto:${addresses}?subject=${subject}&body=${body}`;
+      window.location.href = mailtoLink;
+      
+        
+    }
+    ***************/
+    function sendEmail() {
+    const emailInput = document.getElementById("emailInput").value.trim();
+    if (!emailInput) return;
+
+    const addresses = emailInput
+        .split(",")
+        .map(a => a.trim())
+        .filter(a => a.length > 0)
+        .join(",");
+
+    if (!addresses) return;
+
+    let allPGN = buildAllPGN();
+    if (!allPGN) return;
+
+    // Normalize to CRLF
+    allPGN = allPGN.replace(/\r?\n/g, "\r\n");
+
+    // Gmail requires double-encoding of CRLF to preserve line breaks
+    const encodedBody = allPGN
+        .replace(/\r\n/g, "%0D%0A")   // encode CRLF
+        .replace(/ /g, "%20");        // encode spaces (optional but helps Gmail)
+
+    const subject = "Chess%20Game%20PGN";
+
+    const mailtoLink =
+        "mailto:" + addresses +
+        "?subject=" + subject +
+        "&body=" + encodedBody;
+
+    window.location.href = mailtoLink;
+    }
+
+    function flipBoard() {
+      flipped = !flipped;
+      drawBoard();
+    }
+
+    window.onload = function() {
+      updatePGN();
+      drawBoard();
+    };
+  </script>
+</head>
+
+<body>
+  <h1>Chess Move Tracker</h1>
+
+  <div id="board"></div>
+
+  <div id="controls">
+    <button onclick="newGame()">New Game</button>
+    <button onclick="flipBoard()">Flip Board</button>
+    <button onclick="copyPGN()">Copy PGN</button>
+    <input id="emailInput" type="text" placeholder="Email to (comma-separated)">
+    <button onclick="sendEmail()">Send PGN</button>
+  </div>
+
+  <h3>PGN Output</h3>
+  <textarea id="moves"></textarea>
+</body>
+</html>
+<!-- END OF CHUNK 3 -->
+
+
+
+
+
+
+
