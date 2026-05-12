@@ -207,8 +207,6 @@
         }
       }
     }
-
-/* END OF CHUNK 1 */
     
 
     function handleClick(r, c) {
@@ -227,50 +225,32 @@
         return;
       }
 
-      // CASE 2: Source selected, no destination yet
+      // CASE 2: Source selected, now selecting destination
       if (selectedSource && !selectedDestination) {
-        // Clicked same source square -> unselect
-        if (r === selectedSource.r && c === selectedSource.c) {
-          selectedSource = null;
-          selectedDestination = null;
-          lastPreview = null;
-          drawBoard();
-          return;
+        const movingPiece = selectedSource.piece;
+        const targetPiece = board[r][c];
+
+        // If landing on same-color piece → illegal
+        if (targetPiece !== ".") {
+            const movingIsWhite = movingPiece === movingPiece.toUpperCase();
+            const targetIsWhite = targetPiece === targetPiece.toUpperCase();
+
+            if (movingIsWhite === targetIsWhite) {
+                // Illegal same-color capture attempt
+                // Keep source selected, do NOT set destination
+                drawBoard();
+                return;
+            }
         }
 
-        // Otherwise, treat as destination (preview move)
-        previewMove(selectedSource, { r, c });
-        return;
+          // Otherwise legal: set destination and preview
+          selectedDestination = { r, c };
+          previewMove(selectedSource, { r, c }); 
+          return;
       }
 
-      /***********************
 
-      // CASE 3: Source and destination selected (preview active)
-      if (selectedSource && selectedDestination) {
-        // Clicked destination again -> undo preview
-        if (r === selectedDestination.r && c === selectedDestination.c) {
-          undoPreview();
-          return;
-        }
-
-        // Illegal same-side click after preview: ignore completely
-        if (piece !== "." &&
-            ((turn === "white" && piece === piece.toUpperCase()) ||
-             (turn === "black" && piece === piece.toLowerCase()))) {
-          drawBoard();
-          return;
-        }
-
-        // Otherwise: commit previous move and start new selection
-        selectedSource = null;
-        selectedDestination = null;
-        lastPreview = null;
-        drawBoard();
-        handleClick(r, c);
-        return;
-      }
-        ****************************/
-             // CASE 3: Source and destination selected (preview active)
+        // CASE 3: Source and destination selected (preview active)
         if (selectedSource && selectedDestination) {
             // Clicked destination again -> undo preview
             if (r === selectedDestination.r && c === selectedDestination.c) {
@@ -307,19 +287,24 @@
     }
 
     function previewMove(from, to) {
-      // Save state before preview
+      // Determine if there is a capture on the destination square
+      const capturedPiece = board[to.r][to.c];
+
+      // Save state before preview (including captured piece info)
       lastPreview = {
         board: cloneBoard(board),
         moveList: moveList.slice(),
         moveNumber: moveNumber,
         turn: turn,
-        source: { ...from }
+        source: { ...from },
+        capturedPiece: capturedPiece
       };
 
-      // Apply move
+      // Apply move on the board
       board[to.r] = replaceChar(board[to.r], to.c, from.piece);
       board[from.r] = replaceChar(board[from.r], from.c, ".");
 
+      // Record move (recordMove will look at lastPreview.capturedPiece)
       recordMove(from, to); // this also flips turn / increments moveNumber
 
       selectedDestination = { r: to.r, c: to.c };
@@ -350,8 +335,16 @@
       const files = "abcdefgh";
       const ranks = "87654321";
 
-      const moveText = files[from.c] + ranks[from.r] + "-" +
-                       files[to.c] + ranks[to.r];
+      // Use "x" for captures, "-" for normal moves
+      let separator = "-";
+      if (lastPreview && lastPreview.capturedPiece && lastPreview.capturedPiece !== ".") {
+        separator = "x";
+      }
+
+      const moveText =
+        files[from.c] + ranks[from.r] +
+        separator +
+        files[to.c] + ranks[to.r];
 
       if (turn === "white") {
         moveList.push(moveNumber + ". " + moveText);
@@ -365,6 +358,7 @@
 
       updatePGN();
     }
+
 
     function updatePGN() {
       const pgnBox = document.getElementById("moves");
