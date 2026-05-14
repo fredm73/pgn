@@ -3,7 +3,7 @@
 **PGN** is a lightweight, mobile‑friendly chess scoresheet that runs entirely in the browser.  
 Tap squares to record moves, preview and undo before committing, flip the board, track multiple games, and export clean PGN via email — all without installing anything.
 
-Designed for players who want a fast, frictionless way to record games on a phone during casual or tournament play.
+Designed for players who want a fast, frictionless way to record games on a phone during casual play. Most tournaments disallow devices.
 
 ---
 
@@ -16,7 +16,7 @@ Designed for players who want a fast, frictionless way to record games on a phon
   Destination stays highlighted until confirmed; tap again to undo.
 
 - **Illegal‑move protection**  
-  Same‑side clicks after a preview are ignored without clearing the destination.
+  All the rules of chess are enforced.
 
 - **Flip board**  
   Coordinates remain correct regardless of orientation.
@@ -55,4 +55,9 @@ https://fredm73.github.io/pgn/
 ## License
 
 MIT License — free to use, modify, and share.
+
+
+
+
+
 
