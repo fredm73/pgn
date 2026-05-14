@@ -1,6 +1,7 @@
 // state.js
 // ChessState: owns every piece of mutable application data.
 // Depends on: constants.js (ChessConstants)
+// updated 5/14/2026
 
 class ChessState {
 

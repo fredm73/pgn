@@ -5,6 +5,7 @@
 // A single global `app` instance is created inside window.onload so that
 // all DOM elements exist before the constructors try to find them.
 // By the time any button can be clicked, `app` is fully initialised.
+// updated 5/14/2026
 
 class ChessApp {
 

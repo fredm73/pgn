@@ -1,6 +1,7 @@
 // pgn.js
 // PGNManager: PGN generation, clipboard copy, and email delivery.
 // Depends on: state.js (ChessState)
+// updated 5/14/2026
 
 class PGNManager {
 
