@@ -6,13 +6,13 @@ class ChessState {
 
   constructor() {
     // Completed games survive a "New Game" call; everything else resets.
-    this.games   = [];      // array of archived PGN strings
+    this.games = [];        // array of archived PGN strings
     this.flipped = false;   // board orientation survives new games too
 
     this._initGame();
   }
 
-  // ── Private helper called by constructor and resetForNewGame ─────────────
+  // ── Private helper called by constructor and resetForNewGame ────────────
 
   _initGame() {
     this.board      = ChessConstants.cloneBoard(ChessConstants.INITIAL_BOARD);
@@ -20,29 +20,19 @@ class ChessState {
     this.moveList   = [];        // e.g. ["1. e2-e4 e7-e5", "2. d2-d4"]
     this.moveNumber = 1;
 
-    // Castling availability — four independent flags.
-    // Set to false the moment the relevant king or rook first moves.
-    this.castling = { wK: true, wQ: true, bK: true, bQ: true };
-
-    // Square behind a pawn that just made a double push, or null.
-    // Stored as { r, c } in board coordinates.
-    this.enPassantTarget = null;
-
     // Selection / preview — all null when no square is active
     this.selectedSource      = null; // { r, c, piece }
     this.selectedDestination = null; // { r, c }
-    this.lastPreview         = null; // full snapshot before a previewed move
-
-    // Extra squares to highlight after a castling preview:
-    // { rookFrom:{r,c}, rookTo:{r,c} } or null
-    this.castlingHighlights = null;
-
-    // Flag: promotion is pending (dialog shown, waiting for user choice)
-    this.promotionPending = false;
+    this.lastPreview         = null; // snapshot taken before a previewed move
+                                     // { board, moveList, moveNumber, turn,
+                                     //   source, capturedPiece }
+    this.result              = "*";  // "*" | "1-0" | "0-1" | "1/2-1/2"
   }
 
-  // ── Public API ────────────────────────────────────────────────────────────
+  // ── Public API ───────────────────────────────────────────────────────────
 
+  // Archive the current game's PGN (if non-empty) then reinitialise game
+  // data.  Board orientation (flipped) and the games archive are preserved.
   resetForNewGame(currentPGN) {
     if (currentPGN && currentPGN.trim().length > 0 && this.moveList.length > 0) {
       this.games.push(currentPGN.trim());
@@ -54,7 +44,5 @@ class ChessState {
     this.selectedSource      = null;
     this.selectedDestination = null;
     this.lastPreview         = null;
-    this.castlingHighlights  = null;
-    this.promotionPending    = false;
   }
 }

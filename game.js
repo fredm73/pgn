@@ -29,7 +29,22 @@ class ChessApp {
   // ── Button handlers (called directly from HTML onclick attributes) ────────
 
   newGame() {
-    // Archive the current game before resetting
+    // If moves have been made (and no result recorded yet), ask for the result
+    if (this.state.moveList.length > 0 && this.state.result === "*") {
+      document.getElementById("resultOverlay").classList.add("open");
+      return;
+    }
+    this._startNewGame();
+  }
+
+  // Called by result dialog buttons: result is "1-0", "0-1", or "1/2-1/2"
+  finishGame(result) {
+    document.getElementById("resultOverlay").classList.remove("open");
+    this.pgn.appendResult(result);   // writes result into current PGN
+    this._startNewGame();
+  }
+
+  _startNewGame() {
     this.pgn.updatePGN();
     this.state.resetForNewGame(this.pgn.textarea.value);
     this.pgn.updatePGN();
