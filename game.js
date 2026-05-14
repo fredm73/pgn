@@ -5,7 +5,6 @@
 // A single global `app` instance is created inside window.onload so that
 // all DOM elements exist before the constructors try to find them.
 // By the time any button can be clicked, `app` is fully initialised.
-// updated on 5/14/2026 by Claude
 
 class ChessApp {
 
@@ -30,22 +29,7 @@ class ChessApp {
   // ── Button handlers (called directly from HTML onclick attributes) ────────
 
   newGame() {
-    // If moves have been made (and no result recorded yet), ask for the result
-    if (this.state.moveList.length > 0 && this.state.result === "*") {
-      document.getElementById("resultOverlay").classList.add("open");
-      return;
-    }
-    this._startNewGame();
-  }
-
-  // Called by result dialog buttons: result is "1-0", "0-1", or "1/2-1/2"
-  finishGame(result) {
-    document.getElementById("resultOverlay").classList.remove("open");
-    this.pgn.appendResult(result);   // writes result into current PGN
-    this._startNewGame();
-  }
-
-  _startNewGame() {
+    // Archive the current game before resetting
     this.pgn.updatePGN();
     this.state.resetForNewGame(this.pgn.textarea.value);
     this.pgn.updatePGN();

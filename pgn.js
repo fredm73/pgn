@@ -13,15 +13,8 @@ class PGNManager {
 
   // Rebuild the textarea from current state.
   updatePGN() {
-    const moves = this.state.moveList.join("\r\n");
-    const result = this.state.result !== "*" ? "\r\n" + this.state.result : "";
-    this.textarea.value = this._header() + "\r\n\r\n" + moves + result;
-  }
-
-  // Append the result token to the current PGN and update the textarea.
-  appendResult(result) {
-    this.state.result = result;
-    this.updatePGN();
+    this.textarea.value = this._header() + "\r\n\r\n" +
+                          this.state.moveList.join("\r\n");
   }
 
   // Return one PGN string containing all archived games plus the current one.
@@ -80,13 +73,12 @@ class PGNManager {
     const yyyy = d.getFullYear();
     const mm   = String(d.getMonth() + 1).padStart(2, "0");
     const dd   = String(d.getDate()).padStart(2, "0");
-    const result = this.state.result || "*";
 
     return [
       `[Date "${yyyy}.${mm}.${dd}"]`,
       `[White " "]`,
       `[Black " "]`,
-      `[Result "${result}"]`
+      `[Result "1/2-1/2"]`
     ].join("\r\n");
   }
 }

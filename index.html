@@ -1,9 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <link rel="icon" href="data:,">
   <meta charset="UTF-8">
-  <title>Chess Move Tracker</title>
+  <title>Chess Move Tracker V3</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <style>
@@ -92,17 +91,9 @@
     }
 
     @media (max-width: 700px) {
-      body { margin: 10px; }
-      #board {
-        grid-template-columns: repeat(8, 12.5vw);
-        grid-template-rows:    repeat(8, 12.5vw);
-        width: 100vw;
-        max-width: 100vw;
-        margin-left: -10px;   /* bleed past body margin so board fills edge-to-edge */
-      }
+      #board { width: 100%; max-width: 100%; }
       .square    { width: 12.5vw; height: 12.5vw; }
-      .piece-img { width: 10.5vw; height: 10.5vw; }
-      .coord     { font-size: 8px; }
+      .piece-img { width: 11vw;   height: 11vw;   }
     }
   </style>
 
