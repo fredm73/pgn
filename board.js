@@ -5,13 +5,12 @@
 // The click handler is intentionally decoupled: ChessApp sets
 // this.onSquareClick after constructing both BoardRenderer and MoveHandler,
 // avoiding a forward-dependency on moves.js.
-// updated 5/14/2026
 
 class BoardRenderer {
 
   constructor(state, boardDivId) {
-    this.state         = state;
-    this.boardDiv      = document.getElementById(boardDivId);
+    this.state       = state;
+    this.boardDiv    = document.getElementById(boardDivId);
     this.onSquareClick = null; // (boardRow, boardCol) => void  — set by ChessApp
   }
 
@@ -30,6 +29,8 @@ class BoardRenderer {
 
   // ── Private helpers ───────────────────────────────────────────────────────
 
+  // Map a display cell (displayRow, displayCol) to the logical board
+  // (boardRow, boardCol), honouring the flip flag.
   _displayToBoard(displayRow, displayCol) {
     return this.state.flipped
       ? { br: 7 - displayRow, bc: 7 - displayCol }
@@ -52,34 +53,25 @@ class BoardRenderer {
       sq.appendChild(img);
     }
 
-    // Coordinate label
+    // Coordinate label (always reflects the logical square)
     const coordSpan = document.createElement("div");
     coordSpan.className   = "coord";
     coordSpan.textContent = ChessConstants.FILES[bc] + ChessConstants.RANKS[br];
     sq.appendChild(coordSpan);
 
-    // Highlight: source square (yellow)
+    // Highlight source square
     const sel = this.state.selectedSource;
     if (sel && br === sel.r && bc === sel.c) {
       sq.classList.add("source-selected");
     }
 
-    // Highlight: king destination after a castling or normal king move (orange)
+    // Highlight destination square
     const dest = this.state.selectedDestination;
     if (dest && br === dest.r && bc === dest.c) {
       sq.classList.add("dest-selected");
     }
 
-    // Highlight: castling — rook's from and to squares (orange, same shade)
-    const ch = this.state.castlingHighlights;
-    if (ch) {
-      if ((br === ch.rookFrom.r && bc === ch.rookFrom.c) ||
-          (br === ch.rookTo.r   && bc === ch.rookTo.c)) {
-        sq.classList.add("dest-selected");
-      }
-    }
-
-    // Click routing
+    // Click routing — resolved at runtime so moves.js need not be loaded yet
     sq.onclick = () => this.onSquareClick && this.onSquareClick(br, bc);
 
     return sq;
