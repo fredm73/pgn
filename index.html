@@ -92,9 +92,21 @@
     }
 
     @media (max-width: 700px) {
-      #board { width: 100%; max-width: 100%; }
-      .square    { width: 12.5vw; height: 12.5vw; }
-      .piece-img { width: 11vw;   height: 11vw;   }
+      body { margin: 8px; }
+      #board {
+        width: calc(100vw - 16px);
+        max-width: calc(100vw - 16px);
+        grid-template-columns: repeat(8, calc((100vw - 16px) / 8));
+        grid-template-rows:    repeat(8, calc((100vw - 16px) / 8));
+      }
+      .square {
+        width:  calc((100vw - 16px) / 8);
+        height: calc((100vw - 16px) / 8);
+      }
+      .piece-img {
+        width:  calc((100vw - 16px) / 8 - 4px);
+        height: calc((100vw - 16px) / 8 - 4px);
+      }
     }
 
     /* ── Result dialog ──────────────────────────────────────────────── */
