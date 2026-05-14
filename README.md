@@ -38,7 +38,7 @@ Designed for players who want a fast, frictionless way to record games on a phon
 ## Usage
 
 1. Open the app in your browser.  
-2. Tap a piece, then tap its destination square.  
+2. Tap a piece, then tap its destination square. If the destination tap results in no action: the move is illegal.
 3. Use **Undo**, **Flip Board**, or **New Game** as needed.  
 4. Tap **Send PGN** to email all recorded games.  
 5. Tap **Copy PGN** to copy the full PGN history to your clipboard.
