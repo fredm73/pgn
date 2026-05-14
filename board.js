@@ -5,6 +5,7 @@
 // The click handler is intentionally decoupled: ChessApp sets
 // this.onSquareClick after constructing both BoardRenderer and MoveHandler,
 // avoiding a forward-dependency on moves.js.
+// changed 5/14/2026...
 
 class BoardRenderer {
 

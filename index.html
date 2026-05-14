@@ -159,12 +159,18 @@
       moves.js       MoveHandler      game logic; uses all of the above
       game.js        ChessApp         wires everything; creates window.app on load
   -->
-  <script src="constants.js"></script>
-  <script src="state.js"></script>
-  <script src="board.js"></script>
-  <script src="pgn.js"></script>
-  <script src="moves.js"></script>
-  <script src="game.js"></script>
+
+  <script>
+    // Cache-bust all JS files so browsers always load the latest version.
+    // This replaces static <script src="..."> tags — do NOT add those below.
+    const version = Date.now();
+    ["constants.js", "state.js", "board.js", "pgn.js", "moves.js", "game.js"]
+      .forEach(file => {
+        const s = document.createElement("script");
+        s.src = file + "?v=" + version;
+        document.head.appendChild(s);
+      });
+  </script>
 </head>
 
 <body>

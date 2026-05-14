@@ -1,6 +1,7 @@
 // constants.js
 // ChessConstants: all static, no instantiation needed.
 // No dependency on any other project file.
+// changed 5/14/2026
 
 class ChessConstants {
 

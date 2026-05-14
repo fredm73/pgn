@@ -1,6 +1,7 @@
 // pgn.js
 // PGNManager: PGN generation, clipboard copy, and email delivery.
 // Depends on: state.js (ChessState)
+//changed 5/14/2026...
 
 class PGNManager {
 
@@ -27,10 +28,10 @@ class PGNManager {
   // Return one PGN string containing all archived games plus the current one.
   buildAllPGN() {
     this.updatePGN();
-    const currentPGN = this.textarea.value.trim();
 
-    const all = currentPGN.length > 0
-      ? [...this.state.games, currentPGN]
+    // Only include the current game if it actually has moves
+    const all = this.state.moveList.length > 0
+      ? [...this.state.games, this.textarea.value.trim()]
       : [...this.state.games];
 
     return all.join(
