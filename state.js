@@ -28,6 +28,9 @@ class ChessState {
                                      // { board, moveList, moveNumber, turn,
                                      //   source, capturedPiece }
     this.result              = "*";  // "*" | "1-0" | "0-1" | "1/2-1/2"
+
+    // Initialize chess.js engine instance
+    this.chess = new Chess();
   }
 
   // ── Public API ───────────────────────────────────────────────────────────

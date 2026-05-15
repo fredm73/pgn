@@ -1,11 +1,7 @@
 // game.js
 // ChessApp: constructs and wires all objects; exposes the button API.
 // Depends on: constants.js, state.js, board.js, pgn.js, moves.js
-//
-// A single global `app` instance is created inside window.onload so that
-// all DOM elements exist before the constructors try to find them.
-// By the time any button can be clicked, `app` is fully initialised.
-//changed 5/14/2026...
+// changed 5/15/2026...
 
 class ChessApp {
 
@@ -16,7 +12,6 @@ class ChessApp {
     this.moves    = new MoveHandler(this.state, this.renderer, this.pgn);
 
     // Inject the click handler now that MoveHandler exists.
-    // BoardRenderer stored a null placeholder so it could be loaded first.
     this.renderer.onSquareClick = (r, c) => this.moves.handleClick(r, c);
   }
 
@@ -41,20 +36,24 @@ class ChessApp {
   // Called by result dialog buttons: result is "1-0", "0-1", or "1/2-1/2"
   finishGame(result) {
     document.getElementById("resultOverlay").classList.remove("open");
-    // Set the result and capture the completed PGN before any reset
+    
+    // Finalize current state and extract only this single game's string
     this.state.result = result;
-    this.pgn.updatePGN();
-    const completedPGN = this.pgn.textarea.value.trim();
-    // Archive and reset
+    const completedPGN = this.pgn.buildCurrentGamePGN();
+    
+    // Archive isolated string and reset engine data
     this.state.games.push(completedPGN);
     this.state._initGame();
+    
     this.pgn.updatePGN();
     this.renderer.draw();
   }
 
   _startNewGame() {
-    this.pgn.updatePGN();
-    this.state.resetForNewGame(this.pgn.textarea.value);
+    // Isolate the current un-flagged game string to push into archives
+    const completedPGN = this.pgn.buildCurrentGamePGN();
+    this.state.resetForNewGame(completedPGN);
+    
     this.pgn.updatePGN();
     this.renderer.draw();
   }
@@ -79,7 +78,6 @@ class ChessApp {
 }
 
 // ── Bootstrap ────────────────────────────────────────────────────────────────
-// Assign to window so onclick="app.newGame()" etc. resolve correctly.
 window.onload = () => {
   window.app = new ChessApp();
   app.init();

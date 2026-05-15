@@ -1,7 +1,7 @@
 // pgn.js
 // PGNManager: PGN generation, clipboard copy, and email delivery.
 // Depends on: state.js (ChessState)
-//changed 5/14/2026...
+// changed 5/15/2026...
 
 class PGNManager {
 
@@ -12,11 +12,24 @@ class PGNManager {
 
   // ── Public API ────────────────────────────────────────────────────────────
 
-  // Rebuild the textarea from current state.
-  updatePGN() {
+  // Builds the isolated PGN string for the current game only
+  buildCurrentGamePGN() {
     const moves = this.state.moveList.join("\r\n");
     const result = this.state.result !== "*" ? "\r\n" + this.state.result : "";
-    this.textarea.value = this._header() + "\r\n\r\n" + moves + result;
+    return this._header() + "\r\n\r\n" + moves + result;
+  }
+
+  // Rebuild the textarea to reflect all archived games plus the current game.
+  updatePGN() {
+    const currentGamePGN = this.buildCurrentGamePGN();
+    
+    // Only append the current game to the view if it has active moves
+    const allGames = this.state.moveList.length > 0
+      ? [...this.state.games, currentGamePGN.trim()]
+      : [...this.state.games];
+
+    // Separate distinct games by a double newline delimiter
+    this.textarea.value = allGames.join("\r\n\r\n");
   }
 
   // Append the result token to the current PGN and update the textarea.
@@ -28,15 +41,7 @@ class PGNManager {
   // Return one PGN string containing all archived games plus the current one.
   buildAllPGN() {
     this.updatePGN();
-
-    // Only include the current game if it actually has moves
-    const all = this.state.moveList.length > 0
-      ? [...this.state.games, this.textarea.value.trim()]
-      : [...this.state.games];
-
-    return all.join(
-      "\r\n\r\n----------------------------------------\r\n\r\n"
-    );
+    return this.textarea.value;
   }
 
   copyPGN() {
@@ -77,17 +82,10 @@ class PGNManager {
   // ── Private helpers ───────────────────────────────────────────────────────
 
   _header() {
-    const d    = new Date();
+    const d = new Date();
     const yyyy = d.getFullYear();
-    const mm   = String(d.getMonth() + 1).padStart(2, "0");
-    const dd   = String(d.getDate()).padStart(2, "0");
-    const result = this.state.result || "*";
-
-    return [
-      `[Date "${yyyy}.${mm}.${dd}"]`,
-      `[White " "]`,
-      `[Black " "]`,
-      `[Result "${result}"]`
-    ].join("\r\n");
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `[Event "Casual Match"]\r\n[Site "Local App"]\r\n[Date "${yyyy}.${mm}.${dd}"]\r\n[Round "-"]\r\n[White "White"]\r\n[Black "Black"]\r\n[Result "${this.state.result}"]`;
   }
 }

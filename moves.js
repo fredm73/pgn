@@ -28,6 +28,18 @@ class MoveHandler {
 
     // ── Case 2: Source chosen — pick a destination ───────────────────────
     if (!s.selectedDestination) {
+      const fromSquare = ChessConstants.FILES[s.selectedSource.c] + ChessConstants.RANKS[s.selectedSource.r];
+      const toSquare = ChessConstants.FILES[c] + ChessConstants.RANKS[r];
+      
+      // Look up all legal moves for the selected piece from chess.js
+      const legalMoves = s.chess.moves({ square: fromSquare, verbose: true });
+      const isLegal = legalMoves.some(m => m.to === toSquare);
+      
+      // Ignore click entirely if it violates ANY standard chess rules
+      if (!isLegal) {
+        return;
+      }
+
       this._trySelectDestination(r, c);
       return;
     }
@@ -112,9 +124,33 @@ class MoveHandler {
       capturedPiece
     };
 
-    // Apply the move on the board
-    s.board[to.r]   = ChessConstants.replaceChar(s.board[to.r],   to.c,   from.piece);
-    s.board[from.r] = ChessConstants.replaceChar(s.board[from.r], from.c, ".");
+    const fromSquare = ChessConstants.FILES[from.c] + ChessConstants.RANKS[from.r];
+    const toSquare = ChessConstants.FILES[to.c] + ChessConstants.RANKS[to.r];
+    
+    const isPawn = from.piece.toLowerCase() === 'p';
+    const isPromotion = isPawn && (ChessConstants.RANKS[to.r] === '1' || ChessConstants.RANKS[to.r] === '8');
+
+    // Register move inside chess.js rule engine (handles promotion fallback to queen)
+    s.chess.move({
+      from: fromSquare,
+      to: toSquare,
+      promotion: isPromotion ? 'q' : undefined
+    });
+
+    // Synchronize s.board directly from chess.js to accurately reflect castling rooks, en passant, and promotions
+    const chessBoard = s.chess.board();
+    for (let row = 0; row < 8; row++) {
+      let rowStr = "";
+      for (let col = 0; col < 8; col++) {
+        const square = chessBoard[row][col];
+        if (!square) {
+          rowStr += ".";
+        } else {
+          rowStr += (square.color === 'w') ? square.type.toUpperCase() : square.type.toLowerCase();
+        }
+      }
+      s.board[row] = rowStr;
+    }
 
     this._recordMove(from, to); // also advances turn / moveNumber
 
@@ -125,6 +161,9 @@ class MoveHandler {
   _undoPreview() {
     const s = this.state;
     if (!s.lastPreview) return;
+
+    // Undo rule engine state
+    s.chess.undo();
 
     s.board      = ChessConstants.cloneBoard(s.lastPreview.board);
     s.moveList   = s.lastPreview.moveList.slice();

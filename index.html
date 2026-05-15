@@ -161,25 +161,16 @@
     .result-btn:hover { filter: brightness(1.1); }
   </style>
 
-  <!--
-    Class load order — each file may use only classes defined in earlier files:
-
-      constants.js   ChessConstants   pure static helpers; no deps
-      state.js       ChessState       mutable data; uses ChessConstants
-      board.js       BoardRenderer    DOM rendering; uses ChessConstants + ChessState
-      pgn.js         PGNManager       PGN output; uses ChessState
-      moves.js       MoveHandler      game logic; uses all of the above
-      game.js        ChessApp         wires everything; creates window.app on load
-  -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
 
   <script>
     // Cache-bust all JS files so browsers always load the latest version.
-    // This replaces static <script src="..."> tags — do NOT add those below.
     const version = Date.now();
     ["constants.js", "state.js", "board.js", "pgn.js", "moves.js", "game.js"]
       .forEach(file => {
         const s = document.createElement("script");
         s.src = file + "?v=" + version;
+        s.async = false; // Forces sequential file execution order
         document.head.appendChild(s);
       });
   </script>
@@ -191,11 +182,6 @@
   <div id="board"></div>
 
   <div id="controls">
-    <!--
-      All buttons delegate to the global `app` instance created by game.js.
-      By the time any button can be clicked, window.onload has already run
-      and window.app is fully initialised.
-    -->
     <button onclick="app.newGame()">New Game</button>
     <button onclick="app.flipBoard()">Flip Board</button>
     <button onclick="app.copyPGN()">Copy PGN</button>
@@ -206,7 +192,6 @@
   <h3>PGN Output</h3>
   <textarea id="moves"></textarea>
 
-  <!-- Result dialog — shown when New Game is clicked mid-game -->
   <div id="resultOverlay">
     <div id="resultDialog">
       <h2>Game in Progress</h2>
