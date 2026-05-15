@@ -109,8 +109,8 @@
       }
     }
 
-    /* ── Result dialog ──────────────────────────────────────────────── */
-    #resultOverlay {
+    /* ── Result & Name dialogs ──────────────────────────────────────── */
+    #resultOverlay, #namesOverlay {
       display: none;
       position: fixed;
       inset: 0;
@@ -119,7 +119,7 @@
       align-items: center;
       justify-content: center;
     }
-    #resultOverlay.open { display: flex; }
+    #resultOverlay.open, #namesOverlay.open { display: flex; }
 
     #resultDialog {
       background: #fff;
@@ -201,6 +201,22 @@
         <button class="result-btn draw"       onclick="app.finishGame('1/2-1/2')">½-½</button>
         <button class="result-btn black-wins" onclick="app.finishGame('0-1')">0-1</button>
       </div>
+    </div>
+  </div>
+
+  <div id="namesOverlay">
+    <div id="resultDialog">
+      <h2>Enter Player Names</h2>
+      <p>Set names for the upcoming game:</p>
+      <div style="margin-bottom: 14px; text-align: left;">
+        <label style="display: block; font-size: 13px; font-weight: bold; margin-bottom: 4px; color: #2c3e50;">White Player:</label>
+        <input id="whiteInput" type="text" style="width: 100%; padding: 6px; box-sizing: border-box; font-size: 14px;">
+      </div>
+      <div style="margin-bottom: 22px; text-align: left;">
+        <label style="display: block; font-size: 13px; font-weight: bold; margin-bottom: 4px; color: #2c3e50;">Black Player:</label>
+        <input id="blackInput" type="text" style="width: 100%; padding: 6px; box-sizing: border-box; font-size: 14px;">
+      </div>
+      <button class="result-btn draw" onclick="app.submitPlayerNames()">Start Game</button>
     </div>
   </div>
 </body>

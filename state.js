@@ -20,6 +20,8 @@ class ChessState {
     this.turn       = "white";   // "white" | "black"
     this.moveList   = [];        // e.g. ["1. e2-e4 e7-e5", "2. d2-d4"]
     this.moveNumber = 1;
+    this.whitePlayer = "White";
+    this.blackPlayer = "Black";
 
     // Selection / preview — all null when no square is active
     this.selectedSource      = null; // { r, c, piece }
@@ -35,7 +37,7 @@ class ChessState {
     }
   }
 
-  // ── Public API ───────────────────────────────────────────────────────────
+  // ── Public API ──────────────────────────────────────────────────────────
 
   // Archive the current game's PGN (if non-empty) then reinitialise game
   // data.  Board orientation (flipped) and the games archive are preserved.

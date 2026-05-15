@@ -86,6 +86,6 @@ class PGNManager {
     const yyyy = d.getFullYear();
     const mm = String(d.getMonth() + 1).padStart(2, '0');
     const dd = String(d.getDate()).padStart(2, '0');
-    return `[Event "Casual Match"]\r\n[Site "Local App"]\r\n[Date "${yyyy}.${mm}.${dd}"]\r\n[Round "-"]\r\n[White "White"]\r\n[Black "Black"]\r\n[Result "${this.state.result}"]`;
+    return `[Event "Casual Match"]\r\n[Site "Local App"]\r\n[Date "${yyyy}.${mm}.${dd}"]\r\n[Round "-"]\r\n[White "${this.state.whitePlayer}"]\r\n[Black "${this.state.blackPlayer}"]\r\n[Result "${this.state.result}"]`;
   }
 }

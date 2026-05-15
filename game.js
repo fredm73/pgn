@@ -20,6 +20,7 @@ class ChessApp {
   init() {
     this.pgn.updatePGN();
     this.renderer.draw();
+    this.promptPlayerNames();
   }
 
   // ── Button handlers (called directly from HTML onclick attributes) ────────
@@ -45,14 +46,31 @@ class ChessApp {
     this.state.games.push(completedPGN);
     this.state._initGame();
     
-    this.pgn.updatePGN();
-    this.renderer.draw();
+    this.promptPlayerNames();
   }
 
   _startNewGame() {
     // Isolate the current un-flagged game string to push into archives
     const completedPGN = this.pgn.buildCurrentGamePGN();
     this.state.resetForNewGame(completedPGN);
+    
+    this.promptPlayerNames();
+  }
+
+  promptPlayerNames() {
+    document.getElementById("whiteInput").value = "White";
+    document.getElementById("blackInput").value = "Black";
+    document.getElementById("namesOverlay").classList.add("open");
+  }
+
+  submitPlayerNames() {
+    const whiteName = document.getElementById("whiteInput").value.trim();
+    const blackName = document.getElementById("blackInput").value.trim();
+
+    this.state.whitePlayer = whiteName || "White";
+    this.state.blackPlayer = blackName || "Black";
+
+    document.getElementById("namesOverlay").classList.remove("open");
     
     this.pgn.updatePGN();
     this.renderer.draw();
