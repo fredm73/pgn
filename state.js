@@ -1,7 +1,7 @@
 // state.js
 // ChessState: owns every piece of mutable application data.
 // Depends on: constants.js (ChessConstants)
-// changed 5/14/2026...
+// changed 5/15/2026...
 
 class ChessState {
 
@@ -29,8 +29,10 @@ class ChessState {
                                      //   source, capturedPiece }
     this.result              = "*";  // "*" | "1-0" | "0-1" | "1/2-1/2"
 
-    // Initialize chess.js engine instance
-    this.chess = new Chess();
+    // Instantiate chess.js absolute authority rule engine if available
+    if (typeof Chess !== 'undefined') {
+      this.chess = new Chess();
+    }
   }
 
   // ── Public API ───────────────────────────────────────────────────────────

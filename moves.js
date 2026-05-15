@@ -5,7 +5,7 @@
 //             board.js     (BoardRenderer),
 //             pgn.js       (PGNManager)
 
-//changed 5/14/2026...
+//changed 5/15/2026...
 
 class MoveHandler {
 
@@ -28,18 +28,6 @@ class MoveHandler {
 
     // ── Case 2: Source chosen — pick a destination ───────────────────────
     if (!s.selectedDestination) {
-      const fromSquare = ChessConstants.FILES[s.selectedSource.c] + ChessConstants.RANKS[s.selectedSource.r];
-      const toSquare = ChessConstants.FILES[c] + ChessConstants.RANKS[r];
-      
-      // Look up all legal moves for the selected piece from chess.js
-      const legalMoves = s.chess.moves({ square: fromSquare, verbose: true });
-      const isLegal = legalMoves.some(m => m.to === toSquare);
-      
-      // Ignore click entirely if it violates ANY standard chess rules
-      if (!isLegal) {
-        return;
-      }
-
       this._trySelectDestination(r, c);
       return;
     }
@@ -68,11 +56,32 @@ class MoveHandler {
     const s           = this.state;
     const targetPiece = s.board[r][c];
 
-    // Reject landing on a same-colour piece
+    // Handle landing on a same-colour piece
     if (targetPiece !== ".") {
       const movingIsWhite = s.selectedSource.piece === s.selectedSource.piece.toUpperCase();
       const targetIsWhite = targetPiece === targetPiece.toUpperCase();
       if (movingIsWhite === targetIsWhite) {
+        if (r === s.selectedSource.r && c === s.selectedSource.c) {
+          s.clearSelection();
+        } else {
+          this._trySelectSource(r, c);
+        }
+        this.renderer.draw();
+        return;
+      }
+    }
+
+    // ── Absolute Rule Validation via chess.js ───────────────────────────────
+    if (s.chess) {
+      const fromSquare = ChessConstants.FILES[s.selectedSource.c] + ChessConstants.RANKS[s.selectedSource.r];
+      const toSquare   = ChessConstants.FILES[c] + ChessConstants.RANKS[r];
+
+      // Query all legal moves for the current position
+      const legalMoves = s.chess.moves({ verbose: true });
+      const isValid = legalMoves.some(m => m.from === fromSquare && m.to === toSquare);
+
+      if (!isValid) {
+        // Not a legal chess move; drop selection attempt silently
         this.renderer.draw();
         return;
       }
@@ -124,32 +133,39 @@ class MoveHandler {
       capturedPiece
     };
 
-    const fromSquare = ChessConstants.FILES[from.c] + ChessConstants.RANKS[from.r];
-    const toSquare = ChessConstants.FILES[to.c] + ChessConstants.RANKS[to.r];
-    
-    const isPawn = from.piece.toLowerCase() === 'p';
-    const isPromotion = isPawn && (ChessConstants.RANKS[to.r] === '1' || ChessConstants.RANKS[to.r] === '8');
+    if (s.chess) {
+      const fromSquare = ChessConstants.FILES[from.c] + ChessConstants.RANKS[from.r];
+      const toSquare   = ChessConstants.FILES[to.c] + ChessConstants.RANKS[to.r];
+      
+      // Auto-promote pawns to Queen upon reaching terminal ranks to avoid engine rejection
+      const isPawn = from.piece.toLowerCase() === 'p';
+      const isPromotion = isPawn && (to.r === 0 || to.r === 7);
 
-    // Register move inside chess.js rule engine (handles promotion fallback to queen)
-    s.chess.move({
-      from: fromSquare,
-      to: toSquare,
-      promotion: isPromotion ? 'q' : undefined
-    });
+      s.chess.move({
+        from: fromSquare,
+        to: toSquare,
+        promotion: isPromotion ? 'q' : undefined
+      });
 
-    // Synchronize s.board directly from chess.js to accurately reflect castling rooks, en passant, and promotions
-    const chessBoard = s.chess.board();
-    for (let row = 0; row < 8; row++) {
-      let rowStr = "";
-      for (let col = 0; col < 8; col++) {
-        const square = chessBoard[row][col];
-        if (!square) {
-          rowStr += ".";
-        } else {
-          rowStr += (square.color === 'w') ? square.type.toUpperCase() : square.type.toLowerCase();
+      // Mirror the rule engine's board matrix back out to our string layout.
+      // This automatically updates multi-piece maneuvers like castling or en passant.
+      const chessBoard = s.chess.board();
+      for (let r = 0; r < 8; r++) {
+        let rowStr = "";
+        for (let c = 0; c < 8; c++) {
+          const p = chessBoard[r][c];
+          if (!p) {
+            rowStr += ".";
+          } else {
+            rowStr += (p.color === 'w') ? p.type.toUpperCase() : p.type.toLowerCase();
+          }
         }
+        s.board[r] = rowStr;
       }
-      s.board[row] = rowStr;
+    } else {
+      // Fallback fallback calculation if CDN failed to fetch
+      s.board[to.r]   = ChessConstants.replaceChar(s.board[to.r],   to.c,   from.piece);
+      s.board[from.r] = ChessConstants.replaceChar(s.board[from.r], from.c, ".");
     }
 
     this._recordMove(from, to); // also advances turn / moveNumber
@@ -162,13 +178,15 @@ class MoveHandler {
     const s = this.state;
     if (!s.lastPreview) return;
 
-    // Undo rule engine state
-    s.chess.undo();
-
     s.board      = ChessConstants.cloneBoard(s.lastPreview.board);
     s.moveList   = s.lastPreview.moveList.slice();
     s.moveNumber = s.lastPreview.moveNumber;
     s.turn       = s.lastPreview.turn;
+
+    // Roll back the rule engine state to remain perfectly synced
+    if (s.chess) {
+      s.chess.undo();
+    }
 
     s.selectedSource      = { ...s.lastPreview.source };
     s.selectedDestination = null;
