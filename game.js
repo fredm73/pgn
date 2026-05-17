@@ -1,7 +1,6 @@
 // game.js
 // ChessApp: constructs and wires all objects; exposes the button API.
 // Depends on: constants.js, state.js, board.js, pgn.js, moves.js
-// changed 5/15/2026...
 
 class ChessApp {
 
@@ -13,6 +12,9 @@ class ChessApp {
 
     // Inject the click handler now that MoveHandler exists.
     this.renderer.onSquareClick = (r, c) => this.moves.handleClick(r, c);
+
+    // Track the deferred action when the results overlay intercepts a button press
+    this.pendingAction = null; 
   }
 
   // ── Lifecycle ─────────────────────────────────────────────────────────────
@@ -26,8 +28,8 @@ class ChessApp {
   // ── Button handlers (called directly from HTML onclick attributes) ────────
 
   newGame() {
-    // If moves have been made (and no result recorded yet), ask for the result
     if (this.state.moveList.length > 0 && this.state.result === "*") {
+      this.pendingAction = "new";
       document.getElementById("resultOverlay").classList.add("open");
       return;
     }
@@ -38,15 +40,21 @@ class ChessApp {
   finishGame(result) {
     document.getElementById("resultOverlay").classList.remove("open");
     
-    // Finalize current state and extract only this single game's string
+    // Save the result to the current game state and refresh the PGN view
     this.state.result = result;
-    const completedPGN = this.pgn.buildCurrentGamePGN();
+    this.pgn.updatePGN();
     
-    // Archive isolated string and reset engine data
-    this.state.games.push(completedPGN);
-    this.state._initGame();
-    
-    this.promptPlayerNames();
+    // Process deferred requests if the dialog was triggered by Copy, Send, or New buttons
+    const action = this.pendingAction;
+    this.pendingAction = null;
+
+    if (action === "copy") {
+      this.pgn.copyPGN();
+    } else if (action === "send") {
+      this._executeSendEmail();
+    } else if (action === "new") {
+      this._startNewGame();
+    }
   }
 
   _startNewGame() {
@@ -82,10 +90,24 @@ class ChessApp {
   }
 
   copyPGN() {
+    if (this.state.moveList.length > 0 && this.state.result === "*") {
+      this.pendingAction = "copy";
+      document.getElementById("resultOverlay").classList.add("open");
+      return;
+    }
     this.pgn.copyPGN();
   }
 
   sendEmail() {
+    if (this.state.moveList.length > 0 && this.state.result === "*") {
+      this.pendingAction = "send";
+      document.getElementById("resultOverlay").classList.add("open");
+      return;
+    }
+    this._executeSendEmail();
+  }
+
+  _executeSendEmail() {
     const raw       = document.getElementById("emailInput").value;
     const addresses = raw.split(",")
                          .map(a => a.trim())

@@ -5,8 +5,6 @@
 //             board.js     (BoardRenderer),
 //             pgn.js       (PGNManager)
 
-//changed 5/15/2026...
-
 class MoveHandler {
 
   constructor(state, renderer, pgn) {
@@ -133,6 +131,8 @@ class MoveHandler {
       capturedPiece
     };
 
+    let moveResult = null;
+
     if (s.chess) {
       const fromSquare = ChessConstants.FILES[from.c] + ChessConstants.RANKS[from.r];
       const toSquare   = ChessConstants.FILES[to.c] + ChessConstants.RANKS[to.r];
@@ -141,14 +141,13 @@ class MoveHandler {
       const isPawn = from.piece.toLowerCase() === 'p';
       const isPromotion = isPawn && (to.r === 0 || to.r === 7);
 
-      s.chess.move({
+      moveResult = s.chess.move({
         from: fromSquare,
         to: toSquare,
         promotion: isPromotion ? 'q' : undefined
       });
 
       // Mirror the rule engine's board matrix back out to our string layout.
-      // This automatically updates multi-piece maneuvers like castling or en passant.
       const chessBoard = s.chess.board();
       for (let r = 0; r < 8; r++) {
         let rowStr = "";
@@ -168,7 +167,7 @@ class MoveHandler {
       s.board[from.r] = ChessConstants.replaceChar(s.board[from.r], from.c, ".");
     }
 
-    this._recordMove(from, to); // also advances turn / moveNumber
+    this._recordMove(from, to, moveResult); // also advances turn / moveNumber
 
     s.selectedDestination = { r: to.r, c: to.c };
     this.renderer.draw();
@@ -198,20 +197,46 @@ class MoveHandler {
 
   // ── Private: notation ─────────────────────────────────────────────────────
 
-  _recordMove(from, to) {
+  _recordMove(from, to, moveResult) {
     const s   = this.state;
-    const sep = (s.lastPreview?.capturedPiece &&
-                 s.lastPreview.capturedPiece !== ".") ? "x" : "-";
+    
+    // Determine the action separator ('x' for standard/en-passant captures, '-' otherwise)
+    let sep = "-";
+    if (moveResult) {
+      if (moveResult.captured || moveResult.flags.includes('c') || moveResult.flags.includes('e')) {
+        sep = "x";
+      }
+    } else {
+      if (s.lastPreview?.capturedPiece && s.lastPreview.capturedPiece !== ".") {
+        sep = "x";
+      }
+    }
 
-    const notation =
+    let notation =
       ChessConstants.FILES[from.c] + ChessConstants.RANKS[from.r] + sep +
       ChessConstants.FILES[to.c]   + ChessConstants.RANKS[to.r];
+
+    // Look for check or mate parameters using chess.js
+    let isCheckmate = false;
+    if (s.chess) {
+      if (s.chess.in_checkmate()) {
+        notation += "#";
+        isCheckmate = true;
+      } else if (s.chess.in_check()) {
+        notation += "+";
+      }
+    }
 
     if (s.turn === "white") {
       s.moveList.push(s.moveNumber + ". " + notation);
     } else {
       s.moveList[s.moveList.length - 1] += " " + notation;
       s.moveNumber++;
+    }
+
+    // If checkmate occurred, determine winner based on who just completed their turn
+    if (isCheckmate) {
+      s.result = (s.turn === "white") ? "1-0" : "0-1";
     }
 
     s.turn = (s.turn === "white") ? "black" : "white";
