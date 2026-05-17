@@ -1,6 +1,6 @@
-# PGN – A Tap‑to‑Move Chess Scoresheet for the Browser
+# Chess Game Recorder – A Tap‑to‑Move Chess Scoresheet for the Browser
 
-**PGN** is a lightweight, mobile‑friendly chess scoresheet that runs entirely in the browser.  
+**Chess Game Recorder** is a lightweight, mobile‑friendly chess scoresheet that runs entirely in the browser.  
 Tap squares to record moves, preview and undo before committing, flip the board, track multiple games, and export clean PGN via email — all without installing anything.
 
 Designed for players who want a fast, frictionless way to record games on a phone during casual play. Most tournaments disallow devices.
